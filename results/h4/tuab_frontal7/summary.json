@@ -1,0 +1,43 @@
+{
+  "dataset": "tuab_frontal7",
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 2329,
+  "x_shape": [
+    14965,
+    35,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 1.0,
+  "n_results": 30,
+  "elapsed_sec": 47182.4,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.7410570169913332,
+      "std": 0.01648322702209334
+    },
+    "cohen_kappa": {
+      "mean": 0.481262396454622,
+      "std": 0.031761627160017285
+    },
+    "weighted_f1": {
+      "mean": 0.7409922952326018,
+      "std": 0.015282058136490025
+    },
+    "accuracy": {
+      "mean": 0.7412158305462655,
+      "std": 0.015099563044302936
+    },
+    "auc": {
+      "mean": 0.816295335038415,
+      "std": 0.01826956009686197
+    }
+  }
+}

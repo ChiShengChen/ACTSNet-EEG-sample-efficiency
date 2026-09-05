@@ -1,0 +1,45 @@
+{
+  "dataset": "seed_iv",
+  "protocol": "LOSO (15 folds)",
+  "n_classes": 4,
+  "n_subjects": 15,
+  "x_shape": [
+    8640,
+    95,
+    1024
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": false,
+  "train_frac": 1.0,
+  "branch": "lstm",
+  "head": "proto",
+  "n_results": 45,
+  "elapsed_sec": 17188.1,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.3226851851851852,
+      "std": 0.03216176746844149
+    },
+    "cohen_kappa": {
+      "mean": 0.09691358024691357,
+      "std": 0.042882356624588655
+    },
+    "weighted_f1": {
+      "mean": 0.30954400981291297,
+      "std": 0.029839388559171717
+    },
+    "accuracy": {
+      "mean": 0.3226851851851852,
+      "std": 0.03216176746844149
+    },
+    "auc": {
+      "mean": 0.5938706525777321,
+      "std": 0.03531187656289792
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# Preprocessed EEG caches (32 GB) — derived from corpora under data use agreements
+# (TUAB/TUEV require a signed DUA), so they are NOT redistributable. Rebuild them
+# from the raw corpora with pipeline/build_*.py; see README "Reproducing from raw data".
+prep_cache/
+*.npy
+
+# Confidential peer review (decision letter, reviewer comments, correspondence)
+revision/
+
+# Manuscript sources
+paper/
+
+__pycache__/
+*.pyc
+
+# Internal planning / strategy / unpublished manuscript drafts — not part of the
+# code release the manuscript's Code Availability statement refers to.
+SUBMISSION_STRATEGY.md
+PROGRESS.md
+00_shared_infrastructure.md
+Paper1_ACTSNetv1_plan.md
+Paper2_ACTSNetv2_plan*.md
+PAPER2_v2_STATUS.md
+ABSTRACT_paper1_draft.md
+METHODS_paper1_draft.md
+RESULTS_paper1*.md
+INTRO_DISCUSSION_paper1_draft.md
+
+# Paper 2 (ACTSNet v2) work in progress — not described in this manuscript
+run_loso_v2.py
+diag_v2.py

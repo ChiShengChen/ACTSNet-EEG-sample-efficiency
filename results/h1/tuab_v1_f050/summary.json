@@ -1,0 +1,45 @@
+{
+  "dataset": "tuab",
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 2329,
+  "x_shape": [
+    14965,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.5,
+  "branch": "ac",
+  "head": "proto",
+  "n_results": 30,
+  "elapsed_sec": 26514.8,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.7650033680036359,
+      "std": 0.026114130902560883
+    },
+    "cohen_kappa": {
+      "mean": 0.5295905378369635,
+      "std": 0.051948519059040306
+    },
+    "weighted_f1": {
+      "mean": 0.7653245492841483,
+      "std": 0.025733912818418456
+    },
+    "accuracy": {
+      "mean": 0.7654923820141211,
+      "std": 0.025790130729440613
+    },
+    "auc": {
+      "mean": 0.8470946272297255,
+      "std": 0.028843158609802487
+    }
+  }
+}

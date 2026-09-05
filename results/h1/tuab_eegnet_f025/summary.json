@@ -1,0 +1,45 @@
+{
+  "dataset": "tuab",
+  "model": "eegnet",
+  "collapse_bands": false,
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 2329,
+  "x_shape": [
+    14965,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.25,
+  "n_results": 30,
+  "elapsed_sec": 11836.7,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.7420018440456313,
+      "std": 0.018474876924360176
+    },
+    "cohen_kappa": {
+      "mean": 0.4838869580949522,
+      "std": 0.035184960578750424
+    },
+    "weighted_f1": {
+      "mean": 0.7422077635284641,
+      "std": 0.016732771742152774
+    },
+    "accuracy": {
+      "mean": 0.7429762170196952,
+      "std": 0.01640911502666443
+    },
+    "auc": {
+      "mean": 0.8207394460694647,
+      "std": 0.018927389671583184
+    }
+  }
+}

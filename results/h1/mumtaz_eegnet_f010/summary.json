@@ -1,0 +1,45 @@
+{
+  "dataset": "mumtaz",
+  "model": "eegnet",
+  "collapse_bands": false,
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 58,
+  "x_shape": [
+    1158,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.1,
+  "n_results": 30,
+  "elapsed_sec": 21.5,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.49878739316239323,
+      "std": 0.03722966430909008
+    },
+    "cohen_kappa": {
+      "mean": -0.0004586792916640917,
+      "std": 0.07353654018725708
+    },
+    "weighted_f1": {
+      "mean": 0.4517941577406698,
+      "std": 0.07872216542666506
+    },
+    "accuracy": {
+      "mean": 0.49325141242937853,
+      "std": 0.06972560568850786
+    },
+    "auc": {
+      "mean": 0.5014040242165242,
+      "std": 0.06057557336301246
+    }
+  }
+}
