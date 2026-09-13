@@ -1,10 +1,10 @@
-"""Computational-cost comparison across the compared models.
+"""Computational-cost comparison for the JMIR revision (Reviewer L, comment 4).
 
-Accuracy alone does not say whether a model is deployable. This reports, on identical
-hardware (one RTX 3090): training time per step, single-window inference latency, and
-memory footprint for ACTSNet, EEGNet, ShallowConvNet, BigCNN and the transformer --
-separating the encoder cost from the prototypical head's support-set overhead, since
-ACTSNet additionally carries a support set of up to 5000 embeddings at inference time.
+The manuscript reports accuracy only. Reviewer L asks for, on the same hardware
+(one RTX 3090): training time per fold, single-window inference latency, and memory
+footprint for ACTSNet, EEGNet, ShallowConvNet and BigCNN -- separating the encoder
+cost from the prototypical head's support-set overhead, since ACTSNet additionally
+carries a support set of up to 5000 embeddings at inference time.
 
 Run it with an otherwise idle GPU; concurrent jobs invalidate the timings.
 
@@ -110,10 +110,17 @@ def main():
         model.eval()
         with torch.no_grad():
             if is_proto:
-                # encoder-only cost, kept separate from the support-set overhead
+                # encoder-only cost, kept separate from the support-set overhead.
+                # The support set is encoded in chunks of 64, exactly as run_loso.eval_full
+                # does at inference; encoding 5000 windows in one call needs ~5 GiB and is
+                # neither what deployment does nor safe on a shared GPU.
+                def encode_support():
+                    return torch.cat([model.encode(sup_x[i:i + 64]) for i in range(0, len(sup_x), 64)])
                 enc_ms = time_median(lambda: model.encode(one))
-                sup_ms = time_median(lambda: model.encode(sup_x), warmup=2, trials=5)
-                full_ms = time_median(lambda: model(one, sup_x, sup_y), warmup=2, trials=5)
+                sup_ms = time_median(encode_support, warmup=2, trials=5)   # one-off per support set
+                semb = encode_support()
+                # per-query cost once prototypes exist: encode one window + distances to K prototypes
+                full_ms = time_median(lambda: model.proto(model.encode(one), semb, sup_y))
             else:
                 enc_ms = time_median(lambda: model(one))
                 sup_ms = 0.0

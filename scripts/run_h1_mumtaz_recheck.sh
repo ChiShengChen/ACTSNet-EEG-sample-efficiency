@@ -6,12 +6,10 @@
 # 這裡改用 --batch_size 32(確保低比例下仍有 >=2 個 batch),輸出到獨立目錄以保留原始產物。
 #
 # Durable launch:
-#   # 腳本位於 scripts/,專案根目錄是上一層
-cd "$(dirname "$(readlink -f "$0")")/.."
-#   setsid bash scripts/run_h1_mumtaz_recheck.sh >/dev/null 2>&1 < /dev/null & disown; echo ok
+#   cd "$(dirname "$(readlink -f "$0")")/.."
+#   setsid bash run_h1_mumtaz_recheck.sh >/dev/null 2>&1 < /dev/null & disown; echo ok
 set -u
-PY=${PY:-python}      # 覆寫範例:PY=/path/to/env/bin/python bash scripts/xxx.sh
-# 腳本位於 scripts/,專案根目錄是上一層
+PY=${PY:-python}
 cd "$(dirname "$(readlink -f "$0")")/.."
 LOG=results/h1_mumtaz_recheck.log
 mkdir -p results/h1_recheck

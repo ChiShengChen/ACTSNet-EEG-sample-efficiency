@@ -1,17 +1,17 @@
 """2x2 factorial control: encoder architecture x classification head.
 
-Attributing a low-data advantage to *architecture* requires holding the objective
-fixed. ACTSNet uses a prototypical head while the size-matched control (BigCNN) uses
-cross-entropy, so those two differ in architecture *and* objective at once and cannot
-separate the two explanations on their own.
+Reviewer AN (comment 2) on JMIR ms#107929: the manuscript attributes the low-data
+advantage to *architecture*, but ACTSNet uses a prototypical head while the
+size-matched control (BigCNN) uses cross-entropy -- architecture and objective
+change together, so "the advantage comes from the loss" is equally plausible.
 
 This module supplies the missing cells so all four combinations exist under one
 identical protocol (same folds, seeds, support-set construction, model selection):
 
                       | prototypical head | softmax head
     ------------------+-------------------+--------------------------
-    ACTSNet encoder   | full model        | head ablation (--head softmax)
-    BigCNN encoder    | *this module*     | plain `bigcnn` baseline
+    ACTSNet encoder   | full model        | H3 ablation (--head softmax)
+    BigCNN encoder    | *this module*     | existing `bigcnn` baseline
 
 `BigCNNProto` exposes exactly the interface run_loso.py expects of ACTSNet
 (`encode`, `forward(x, support_x, support_labels)`) and reuses ACTSNet's own
@@ -77,12 +77,12 @@ class BigCNNProto(nn.Module):
 
 
 class ACTSNetNoMultiScale(ACTSNet):
-    """Ablate the multi-scale branch.
+    """Editor comment 8: ablate the multi-scale branch.
 
-    The branch ablations cover the Attentional Convolution branch (-> LSTM) and the
-    prototypical head (-> softmax); the multi-scale branch, inherited unchanged from
-    TapNet, is the third component, and a claim that the components are complementary
-    is untested without ablating it too.
+    The manuscript ablates the Attentional Convolution branch (-> LSTM) and the
+    prototypical head (-> softmax) but never the multi-scale branch, which is
+    inherited unchanged from TapNet -- so the claim that the components are
+    complementary is untested for that third component.
 
     Here the multi-scale branch is removed and the final projection is resized to
     take the sequence branch alone; everything else is inherited from ACTSNet.
@@ -105,12 +105,11 @@ def build_model(config, encoder="actsnet", multiscale="on"):
     """Single place that maps the ablation flags to a model.
 
     encoder=actsnet, multiscale=on   -> ACTSNet (full model)
-    encoder=actsnet, multiscale=off  -> multi-scale branch ablation
-    encoder=bigcnn                   -> capacity-matched encoder x head crossover
+    encoder=actsnet, multiscale=off  -> multi-scale branch ablation (editor #8)
+    encoder=bigcnn                   -> capacity-matched crossover (Reviewer AN #2)
     """
     if encoder == "bigcnn":
         if multiscale == "off":
-            raise ValueError("--multiscale off is meaningless for the bigcnn encoder: "
-                         "it has no multi-scale branch")
+            raise ValueError("--multiscale off 對 bigcnn encoder 無意義(它沒有該分支)")
         return BigCNNProto(config)
     return ACTSNet(config) if multiscale == "on" else ACTSNetNoMultiScale(config)

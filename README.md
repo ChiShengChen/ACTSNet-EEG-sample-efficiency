@@ -108,6 +108,32 @@ the preprocessing described in the manuscript, and its README numbers (SEED-IV 0
 TUAB 0.7457) are therefore **not** the manuscript's numbers (0.35, 0.77) and should not be
 compared with them. The pipeline in this repository is the authoritative one for the paper.
 
+## Revision runs (September 2026)
+
+Every model was re-run at a matched batch size after a training-budget defect was found
+(see Corrections). The new results live alongside the originals so the two can be compared:
+
+| Directory | Content |
+|---|---|
+| `results/h1_recheck/` | Mumtaz learning curves, all models at batch 32 (supersedes `results/h1/mumtaz_*` baselines) |
+| `results/planB/` | SEED-IV / TUAB / Cavanagh baselines at batch 64, TapNet learning curves, frontal-7 on Mumtaz and Cavanagh |
+| `results/planC/` | encoder × head crossover (`*_bigcnnproto_*`), multi-scale-branch ablation, episodic training, compute cost (`compute_cost_*.json`) |
+| `results/ocular_control.json` | ocular-contamination control on the raw Mumtaz recordings (`ocular_control.py`) |
+| `results/stats_matched_family.txt` | the Holm-corrected comparison family recomputed on these runs (`stats_paper1.py`) |
+
+New switches in `run_loso.py`: `--encoder {actsnet,bigcnn}`, `--multiscale {on,off}`, `--episodic`.
+Every fold logs the number of batches per epoch (aborting on zero) and the peak VRAM.
+`scripts/submit_all.sh` shows how the runs were queued on a shared GPU scheduler.
+
+### A property of the AC branch
+
+While running the multi-scale-branch ablation we found that the Attentional Convolution
+branch, as implemented (instance normalisation without affine parameters followed by an
+average over the same time axis), produces an identically zero output at inference; see
+`revision_tables.py` and the paper's Methods. All ACTSNet results therefore reflect the
+multi-scale branch and the prototypical head. The architecture file in `ACTSNetv1` is
+unchanged so that the published model can be reproduced exactly.
+
 ## Corrections
 
 While preparing the revision we found and fixed a defect that invalidated part of the
@@ -139,5 +165,5 @@ repository. No result from the thesis is reused.
 
 ## Environment
 
-Python 3.11, PyTorch 2.9.1+cu128, MNE 1.11, scikit-learn 1.7, SciPy 1.17; single RTX 3090.
+Python 3.11, PyTorch 2.9.1+cu128 (memory-mapped caches and a lazy dataset since the revision), MNE 1.11, scikit-learn 1.7, SciPy 1.17; single RTX 3090.
 Seeds 42/123/456 are fixed per run and recorded in every `summary.json`.

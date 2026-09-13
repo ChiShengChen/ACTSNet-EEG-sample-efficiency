@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Matched-training-budget reruns, plus the baseline coverage the paper was missing.
+# 方案 B — JMIR revision:對等訓練預算重跑 + 審稿人要求的新實驗
 #
 # 背景:原始實驗中 v1 一律 --batch_size 64、所有 baseline 一律 256,epochs 都是 100,
 # 而兩邊的 train loader 都是 drop_last=True。結果 baseline 每 epoch 的梯度更新只有 v1
@@ -11,15 +11,14 @@
 # 因此 v1 既有結果可沿用,只需重跑 baseline。ShallowConv 依方案 B 不重跑(光是 TUAB
 # 就需 ~111 GPU 小時),維持原設定並在 Limitations 揭露。
 #
-# Output goes to results/planB/ and never overwrites the original results/, which are
-# kept as the record of what the first version of this work actually ran.
+# 產物一律寫到 results/planB/,不覆蓋原始 results/ —— 原始產物是回覆審稿人的證據。
 # 每個 job 都經過 run_loso.py 的 trainability_gate:0 batch/epoch 直接中止,不再靜默跑空。
 #
 # Durable launch:
-#   # 腳本位於 scripts/,專案根目錄是上一層
-cd "$(dirname "$(readlink -f "$0")")/.."
-#   setsid bash scripts/run_planB.sh >/dev/null 2>&1 < /dev/null & disown; echo ok
+#   cd "$(dirname "$(readlink -f "$0")")/.."
+#   setsid bash run_planB.sh >/dev/null 2>&1 < /dev/null & disown; echo ok
 #
+# 所有 GPU 工作經 gq 排程(機器規則 2026-09-05);平行度預設 1,由 gq 決定何時放行。
 # 平行度預設 1。實測(2026-09-05):8 個 job 各限 2 核併跑需 321s,單獨跑 41s×8=328s
 # → 加速比 1.0,併行毫無幫助。瓶頸是單一 job 就已飽和的資料搬運/記憶體頻寬,不是 CPU
 # 核數(每 job 2 執行緒即滿速)也不是 GPU(使用率僅 7%)。併行反而讓多個 job 同時從
@@ -28,9 +27,8 @@ cd "$(dirname "$(readlink -f "$0")")/.."
 #   DRY=1 bash run_planB.sh  → 只印 job 清單不執行
 # ============================================================================
 set -u
-# 腳本位於 scripts/,專案根目錄是上一層
 cd "$(dirname "$(readlink -f "$0")")/.."
-PY=${PY:-python}      # 覆寫範例:PY=/path/to/env/bin/python bash scripts/xxx.sh
+PY=${PY:-python}
 PAR=${PAR:-1}
 # 每 job 2 執行緒即滿速(實測 1核 77s / 2核 41s / 24核 42s),多給純屬浪費
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-2}
@@ -43,17 +41,21 @@ mkdir -p results/planB
 FRACS=(1.00 0.10 0.25 0.50)
 TAGS=(f100 f010 f025 f050)
 
-add() { echo "bash runjob.sh $*" >> "$JOBS"; }
+add() { echo "GQ_ARGS=\"$GQ\" bash runjob.sh $*" >> "$JOBS"; }
 
 # 每個資料集的 batch size 與 class_weight(沿用原始設定;SEED-IV 類別平衡故不加權)
 bs_of()  { case $1 in mumtaz) echo 32;; *) echo 64;; esac; }
+# gq 資源宣告(誠實值:EEGNet@bs64 實測 1.2 GB VRAM;TUAB cache 13.6 GB 常駐 RAM)
+gq_of()  { case $1 in tuab) echo "-g 6G -c 2 -m 16";; *) echo "-g 4G -c 2 -m 8";; esac; }
+gq_tap() { case $1 in seed_iv) echo "-g 4G -c 2 -m 8";; tuab) echo "-g 7G -c 2 -m 16";; *) echo "-g 7G -c 2 -m 8";; esac; }  # TapNet(LSTM)峰值由探針量得
+gq_v1()  { case $1 in tuab) echo "-g 8G -c 2 -m 16";; *) echo "-g 6G -c 2 -m 8";; esac; }
 cw_of()  { case $1 in seed_iv) echo "";; *) echo "--class_weight";; esac; }
 
 # ---------------------------------------------------------------- Part 1
 # baseline 在對等 batch 下重跑(不含 ShallowConv)。
 # Mumtaz 的 eegnet/bigcnn 已在 results/h1_recheck/ 以 bs32 跑完,故排除。
 for ds in seed_iv mumtaz cavanagh tuab; do
-  bs=$(bs_of $ds); cw=$(cw_of $ds)
+  bs=$(bs_of $ds); cw=$(cw_of $ds); GQ=$(gq_of $ds)
   for m in eegnet bigcnn transformer; do  # transformer 最後,可隨時中止
     [ "$ds" = mumtaz ] && [ "$m" != transformer ] && continue
     for i in 0 1 2 3; do
@@ -66,10 +68,9 @@ for ds in seed_iv mumtaz cavanagh tuab; do
 done
 
 # ---------------------------------------------------------------- Part 2
-# TapNet (= the LSTM branch + prototypical head) was compared only at full data;
-# these fill in its learning curves.
+# 審稿意見 AN-3 / 編輯 #19:TapNet(= v1 的 lstm 分支 + proto 頭)缺低資料量曲線。
 for ds in seed_iv mumtaz cavanagh tuab; do
-  bs=$(bs_of $ds); cw=$(cw_of $ds)
+  bs=$(bs_of $ds); cw=$(cw_of $ds); GQ=$(gq_tap $ds)
   for i in 0 1 2 3; do
     out=results/planB/${ds}_tapnet_${TAGS[$i]}
     add "$out" $PY -u run_loso.py --cache_dir prep_cache/$ds --epochs 100 --eval_every 5 \
@@ -85,14 +86,14 @@ xargs -P "$PAR" -a "$JOBS" -d '\n' -I@ bash -c '@'
 echo "=== PLAN B PART1+2 DONE $(date) ===" >> results/planB.log
 
 # ---------------------------------------------------------------- Part 3
-# Extend the 7-channel frontal montage to the Mumtaz and Cavanagh cohorts, where a
-# low-density montage is the clinically motivated configuration. Needs its own cache.
+# 編輯 #20 / Reviewer L-4:frontal-7 擴到 Mumtaz 與 Cavanagh,需先建 cache。
 for ds in mumtaz cavanagh; do
   if [ ! -f "prep_cache/${ds}_frontal7/data.npy" ]; then
     echo ">>> 建 ${ds}_frontal7 cache $(date)" >> results/planB.log
     # 參數與原始全 montage cache 完全一致(見 run_mumtaz.sh / run_cavanagh.sh),
     # 只改 --montage,否則窗切法不同就無法比較。逐一建,勿併行(會截斷 data.npy)。
-    ( cd pipeline && "$PY" build_${ds}.py --montage frontal7 --win_sec 10 \
+    ( cd pipeline && gq run --cpu-only -c 4 -m 16 -n build_${ds}_frontal7 -- \
+        "$PY" build_${ds}.py --montage frontal7 --win_sec 10 \
         --windows_per_recording 20 --max_total_windows 20000 \
         --out_dir ../prep_cache/${ds}_frontal7 ) >> results/planB.log 2>&1
   fi
@@ -100,11 +101,12 @@ done
 : > "$JOBS"
 for ds in mumtaz cavanagh; do
   [ -f "prep_cache/${ds}_frontal7/data.npy" ] || continue
-  bs=$(bs_of $ds); cw=$(cw_of $ds)
+  bs=$(bs_of $ds); cw=$(cw_of $ds); GQ=$(gq_v1 $ds)
   out=results/planB/${ds}_frontal7_v1
   add "$out" $PY -u run_loso.py --cache_dir prep_cache/${ds}_frontal7 --epochs 100 \
       --eval_every 5 --seeds 42 123 456 --batch_size $bs $cw --output_dir "$out"
   out=results/planB/${ds}_frontal7_eegnet
+  GQ=$(gq_of $ds)
   add "$out" $PY -u run_loso_baseline.py --cache_dir prep_cache/${ds}_frontal7 --model eegnet \
       --epochs 100 --seeds 42 123 456 --batch_size $bs $cw --output_dir "$out"
 done

@@ -1,0 +1,45 @@
+{
+  "dataset": "seed_iv",
+  "model": "eegnet",
+  "collapse_bands": false,
+  "protocol": "LOSO (15 folds)",
+  "n_classes": 4,
+  "n_subjects": 15,
+  "x_shape": [
+    8640,
+    95,
+    1024
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": false,
+  "train_frac": 0.25,
+  "n_results": 45,
+  "elapsed_sec": 4886.2,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.28557098765432104,
+      "std": 0.02838274063400092
+    },
+    "cohen_kappa": {
+      "mean": 0.04742798353909464,
+      "std": 0.03784365417866789
+    },
+    "weighted_f1": {
+      "mean": 0.2664721309199719,
+      "std": 0.034360737143297855
+    },
+    "accuracy": {
+      "mean": 0.28557098765432104,
+      "std": 0.028382740634000914
+    },
+    "auc": {
+      "mean": 0.5469946702103338,
+      "std": 0.03149372931593463
+    }
+  }
+}

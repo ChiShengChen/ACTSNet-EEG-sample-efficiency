@@ -10,12 +10,10 @@
 # 會先等 run_h1_mumtaz_recheck.sh 跑完再開始(避免 GPU 雙占)。
 #
 # Durable launch:
-#   # 腳本位於 scripts/,專案根目錄是上一層
-cd "$(dirname "$(readlink -f "$0")")/.."
-#   setsid bash scripts/run_h1_mumtaz_recheck_v1.sh >/dev/null 2>&1 < /dev/null & disown; echo ok
+#   cd "$(dirname "$(readlink -f "$0")")/.."
+#   setsid bash run_h1_mumtaz_recheck_v1.sh >/dev/null 2>&1 < /dev/null & disown; echo ok
 set -u
-PY=${PY:-python}      # 覆寫範例:PY=/path/to/env/bin/python bash scripts/xxx.sh
-# 腳本位於 scripts/,專案根目錄是上一層
+PY=${PY:-python}
 cd "$(dirname "$(readlink -f "$0")")/.."
 LOG=results/h1_mumtaz_recheck.log
 mkdir -p results/h1_recheck

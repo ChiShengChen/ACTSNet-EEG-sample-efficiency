@@ -1,16 +1,17 @@
 """Assemble the H1 low-data learning curve for one dataset: v1 vs EEGNet across
 train fractions, with per-fraction paired Wilcoxon and AULC.
 
-AULC DEFINITION. The lowest training fraction actually evaluated is 0.10, so the
-trapezoidal integral spans [0.10, 1.00] -- a width of 0.9, not 1.0. Left unnormalised it
-therefore does not lie on the balanced-accuracy scale. Both quantities are printed below:
-the raw integral and the same integral divided by the span of the sampled interval, which
-puts AULC back on the BACC scale and makes it comparable across datasets. The relative
-difference between models is unchanged by the normalisation -- the divisor is common to
-both -- and the arithmetic is printed so every quoted percentage can be checked.
+AULC DEFINITION (editor comment 11, JMIR ms#107929). Section 2.4 defined AULC as the
+integral of balanced accuracy over training fractions from 0 to 1, but the reported
+values are an UNNORMALISED trapezoidal integral over [0.10, 1.00], which spans 0.9 and
+therefore does not lie on the balanced-accuracy scale. Both quantities are printed
+below: the raw integral (reproducing the submitted numbers) and the same integral
+divided by the span of the sampled interval, which puts AULC back on the BACC scale and
+makes it comparable across datasets. The relative difference between models is
+unchanged by the normalisation -- the divisor is common to both.
 
-UNIT OF ANALYSIS: balanced accuracy is averaged across seeds first, so each fold
-contributes one observation to the Wilcoxon test (see stats_paper1.py).
+UNIT OF ANALYSIS (editor comment 10): balanced accuracy is averaged across seeds first,
+so each fold contributes one observation to the Wilcoxon test.
 """
 import json, os, sys
 import numpy as np
@@ -28,7 +29,7 @@ POINTS = [
 ]
 
 def per_fold(d):
-    """One observation per fold: BACC averaged over seeds first."""
+    """One observation per fold: BACC averaged over seeds first (editor #10)."""
     acc = {}
     for x in json.load(open(f"{d}/per_fold.json")):
         acc.setdefault(x["fold"], []).append(x["balanced_accuracy"])

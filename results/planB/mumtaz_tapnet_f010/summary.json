@@ -1,0 +1,48 @@
+{
+  "dataset": "mumtaz",
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 58,
+  "x_shape": [
+    1158,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.1,
+  "encoder": "actsnet",
+  "multiscale": "on",
+  "episodic": false,
+  "branch": "lstm",
+  "head": "proto",
+  "n_results": 30,
+  "elapsed_sec": 719.6,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.6378685897435898,
+      "std": 0.1697655244816061
+    },
+    "cohen_kappa": {
+      "mean": 0.27085872675992995,
+      "std": 0.33849306971098714
+    },
+    "weighted_f1": {
+      "mean": 0.6178253289097756,
+      "std": 0.18655848855727314
+    },
+    "accuracy": {
+      "mean": 0.6311337099811677,
+      "std": 0.17524246767006585
+    },
+    "auc": {
+      "mean": 0.715054487179487,
+      "std": 0.22523953631246246
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "dataset": "cavanagh",
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 119,
+  "x_shape": [
+    4474,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.25,
+  "encoder": "actsnet",
+  "multiscale": "on",
+  "episodic": false,
+  "branch": "lstm",
+  "head": "proto",
+  "n_results": 30,
+  "elapsed_sec": 6798.3,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.5310151435277665,
+      "std": 0.08290677008662073
+    },
+    "cohen_kappa": {
+      "mean": 0.059120512376305695,
+      "std": 0.16091881699328497
+    },
+    "weighted_f1": {
+      "mean": 0.5552046087427985,
+      "std": 0.09666367220154956
+    },
+    "accuracy": {
+      "mean": 0.5701844864708071,
+      "std": 0.08931923897372707
+    },
+    "auc": {
+      "mean": 0.5488673865376046,
+      "std": 0.11269996508011496
+    }
+  }
+}

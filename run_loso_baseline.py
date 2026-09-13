@@ -103,6 +103,11 @@ def run_fold(X, y, groups, tr, te, n_classes, args, device, seed):
 
     tm = eval_clf(model, make_loader(X, y, te, args.batch_size, False), device)
     tm["inner_val_balacc"] = best
+    if torch.cuda.is_available():
+        peak = torch.cuda.max_memory_allocated(device) / 2**30
+        tm["peak_vram_gb"] = round(peak, 2)
+        print(f"[vram] peak {peak:.2f} GiB", flush=True)
+        torch.cuda.reset_peak_memory_stats(device)
     return tm
 
 

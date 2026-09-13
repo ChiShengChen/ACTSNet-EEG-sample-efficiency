@@ -1,0 +1,45 @@
+{
+  "dataset": "tuab",
+  "model": "bigcnn",
+  "collapse_bands": false,
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 2329,
+  "x_shape": [
+    14965,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.5,
+  "n_results": 30,
+  "elapsed_sec": 20202.0,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.7668065638718777,
+      "std": 0.02155858655586938
+    },
+    "cohen_kappa": {
+      "mean": 0.5351819497823179,
+      "std": 0.041803393226220224
+    },
+    "weighted_f1": {
+      "mean": 0.7673379615970426,
+      "std": 0.021145599454418684
+    },
+    "accuracy": {
+      "mean": 0.76921464139725,
+      "std": 0.020329509028442917
+    },
+    "auc": {
+      "mean": 0.8529250439569281,
+      "std": 0.02245656636880367
+    }
+  }
+}

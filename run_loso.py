@@ -55,7 +55,10 @@ from actsnet.train import set_seed, safe_auc          # noqa: E402
 
 # ── data ────────────────────────────────────────────────────────────────────
 def load_cache(cache_dir):
-    data = np.load(os.path.join(cache_dir, "data.npy"))          # (N,C,S,T)
+    # mmap:cache 以檔案映射載入,不複製成匿名記憶體(TUAB 的 data.npy 有 13.6 GB;
+    # 全量載入時 RSS 超過 gq 宣告並耗盡 SWAP,job 被排程器暫停)。頁面由 OS 快取,
+    # 同機多個 job 可共享,數值與非 mmap 完全相同。
+    data = np.load(os.path.join(cache_dir, "data.npy"), mmap_mode="r")   # (N,C,S,T)
     labels = np.load(os.path.join(cache_dir, "labels.npy"))      # (N,)
     subjects = np.load(os.path.join(cache_dir, "subjects.npy"))  # (N,)
     # copy=False:cache 已是 float32,flatten_cst 又只是 reshape view,所以原本的
@@ -65,20 +68,36 @@ def load_cache(cache_dir):
     return flat, labels.astype(np.int64), subjects
 
 
+class _LazySubset(torch.utils.data.Dataset):
+    """Index the (memory-mapped) cache per item instead of copying X[idx] up front.
+
+    TensorDataset(torch.from_numpy(X[idx])) materialised the whole training subset in
+    anonymous RAM (up to 10.5 GB for TUAB at 100%), which together with the cache
+    exceeded the declared RAM, exhausted swap, and got the job paused by the scheduler.
+    Values, dtypes and batch composition are identical; only the memory footprint changes.
+    """
+    def __init__(self, X, y, idx):
+        self.X, self.y, self.idx = X, y, np.asarray(idx)
+    def __len__(self):
+        return len(self.idx)
+    def __getitem__(self, i):
+        j = self.idx[i]
+        return torch.from_numpy(np.array(self.X[j])), torch.as_tensor(int(self.y[j]))   # np.array = 可寫複製,避免 memmap 唯讀警告
+
+
 def make_loader(X, y, idx, batch_size, shuffle, drop_last=False):
-    ds = TensorDataset(torch.from_numpy(X[idx]), torch.from_numpy(y[idx]))
-    return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)
+    return DataLoader(_LazySubset(X, y, idx), batch_size=batch_size, shuffle=shuffle,
+                      drop_last=drop_last)
 
 
 # ── train / eval ────────────────────────────────────────────────────────────
 def _disjoint_support_query(y, generator):
     """Class-stratified split of a batch into disjoint support / query halves.
 
-    The default training loop passes the mini-batch as its own support set, so every
-    query sample contributes to the prototype it is scored against, which partially
-    trivialises the metric objective relative to standard episodic training, in which
-    query samples are held out from the support set. This splits each class's samples
-    in half instead. A class with
+    Editor comment 3: the default training loop passes the mini-batch as its own
+    support set, so every query sample contributes to the prototype it is scored
+    against, which partially trivialises the metric objective relative to standard
+    episodic training. This splits each class's samples in half instead. A class with
     a single sample in the batch goes entirely to support, since a prototype cannot be
     formed without it (it then contributes no query term).
     """
@@ -156,9 +175,11 @@ def eval_full(model, support_loader, query_loader, device, max_support=5000, ret
             break
     sx = torch.cat(sx)[:max_support].to(device)
     sy = torch.cat(sy)[:max_support].to(device)
+    # 支撐集分批編碼。批大小只影響記憶體不影響數值(eval 模式下各樣本獨立);
+    # 用 64 而非 256:cuDNN LSTM 的工作區與 batch×T 成正比,256×2560 時曾達 6.9 GiB 而 OOM。
     semb = []
-    for i in range(0, len(sx), 256):
-        semb.append(model.encode(sx[i:i + 256]))
+    for i in range(0, len(sx), 64):
+        semb.append(model.encode(sx[i:i + 64]))
     semb = torch.cat(semb, 0)
 
     preds, labs, probs = [], [], []
@@ -270,9 +291,8 @@ def run_fold(X, y, groups, train_idx, test_idx, n_classes, args, device, seed):
         seed=seed, device=str(device),
     )
     cfg.n_times = X.shape[2]
-    # Single dispatch point for the ablation / crossover variants (see crossover.py):
-    # only the model changes -- folds, seeds, support-set construction, the training loop
-    # and the selection criterion are shared across every variant.
+    # 消融/交叉對照的唯一分派點(見 crossover.py):只有模型換掉,折切分、seed、
+    # 支撐集建構、訓練迴圈、選模準則全部相同。
     from crossover import build_model
     model = build_model(cfg, getattr(args, "encoder", "actsnet"),
                         getattr(args, "multiscale", "on")).to(device)
@@ -313,6 +333,12 @@ def run_fold(X, y, groups, train_idx, test_idx, n_classes, args, device, seed):
     if getattr(args, "dump_preds", False):
         tm["subjects"] = [str(s) for s in groups[test_idx]]   # aligned with preds (shuffle=False)
     tm["inner_val_balacc"] = best_balacc
+    if torch.cuda.is_available():
+        # 誠實宣告 gq 資源用:每折印出本行程的 VRAM 峰值
+        peak = torch.cuda.max_memory_allocated(device) / 2**30
+        tm["peak_vram_gb"] = round(peak, 2)
+        print(f"[vram] peak {peak:.2f} GiB", flush=True)
+        torch.cuda.reset_peak_memory_stats(device)
     return tm
 
 
@@ -345,9 +371,9 @@ def main():
                     help="AN-2 crossover: ACTSNet encoder (default) or the capacity-matched "
                          "BigCNN trunk, both feeding the same prototypical head")
     ap.add_argument("--multiscale", default="on", choices=["on", "off"],
-                    help="ablation: drop the TapNet-inherited multi-scale branch")
+                    help="editor #8 ablation: drop the TapNet-inherited multi-scale branch")
     ap.add_argument("--episodic", action="store_true",
-                    help="episodic training: split each batch into disjoint support/query "
+                    help="editor #3: split each training batch into disjoint support/query "
                          "halves instead of using the batch as its own support set")
     ap.add_argument("--branch", default="ac", choices=["ac", "lstm"],
                     help="H2 ablation: AC (default) or LSTM (TapNet original) branch")

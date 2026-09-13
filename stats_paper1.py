@@ -1,14 +1,13 @@
-"""Statistics for the ACTSNet comparisons: paired Wilcoxon + rank-biserial effect size
+"""Reviewer-grade statistics for Paper 1: paired Wilcoxon + rank-biserial effect size
 + subject-level bootstrap 95% CI on the mean BACC difference, with Holm-Bonferroni
 correction across the family of comparisons. Pure re-analysis of results/*/per_fold.json.
 
-UNIT OF ANALYSIS. Three seeds evaluated on the same folds are not independent
-observations, so treating every (seed, fold) pair as one inflates the effective sample
-size threefold (45 "observations" from 15 independent folds on SEED-IV) and understates
-uncertainty. The default here averages balanced accuracy across seeds first, so each fold
-contributes exactly one observation and n equals the number of independent folds. Pass
---unit seedfold for the pooled (seed, fold) analysis used in the first version of this
-work, which the fold-level analysis supersedes.
+UNIT OF ANALYSIS (editor comment 10, JMIR ms#107929). The submitted version treated
+every (seed, fold) pair as an independent observation, which inflates n threefold
+(45 "observations" from 15 independent folds on SEED-IV) because three seeds evaluated
+on the same folds are not independent. The default here now averages balanced accuracy
+across seeds first, so each fold contributes exactly one observation and n equals the
+number of independent folds. Pass --unit seedfold to reproduce the submitted analysis.
 """
 import argparse, json, os
 import numpy as np
@@ -17,7 +16,7 @@ from scipy.stats import wilcoxon
 _AP = argparse.ArgumentParser()
 _AP.add_argument("--unit", default="fold", choices=["fold", "seedfold"],
                  help="fold (default): average over seeds first, one observation per fold. "
-                      "seedfold: every (seed,fold) treated as independent (inflates n).")
+                      "seedfold: the submitted analysis, every (seed,fold) treated as independent.")
 _AP.add_argument("--results", default="results", help="results root (e.g. results/planB)")
 ARGS = _AP.parse_args()
 
@@ -60,27 +59,37 @@ def compare(v1_dir, base_dir, label):
 
 # --- family of comparisons (v1 vs EEGNet at full data + both learning curves + ablations) ---
 C = []
-C.append(compare("results/seed_iv", "results/seed_iv_eegnet", "SEED-IV full v1-vs-EEGNet"))
-C.append(compare("results/tuab", "results/tuab_eegnet", "TUAB full v1-vs-EEGNet"))
+C.append(compare("results/seed_iv", "results/planB/seed_iv_eegnet_f100", "SEED-IV full v1-vs-EEGNet"))
+C.append(compare("results/tuab", "results/planB/tuab_eegnet_f100", "TUAB full v1-vs-EEGNet"))
 C.append(compare("results/mumtaz_v1", "results/mumtaz_eegnet", "MDD full v1-vs-EEGNet"))
+# MDD low-data comparisons use the corrected, batch-matched re-runs (results/h1_recheck):
+# the original results/h1/mumtaz_{eegnet,bigcnn}_f010|f025 baselines were never trained
+# (0 batches/epoch at batch 256) and are retained on disk only as the record of the defect.
+MDD_H1 = "results/h1_recheck"
 for f in ["f010", "f025", "f050"]:
-    C.append(compare(f"results/h1/seed_iv_v1_{f}", f"results/h1/seed_iv_eegnet_{f}", f"SEED-IV {f} v1-vs-EEGNet"))
-    C.append(compare(f"results/h1/mumtaz_v1_{f}", f"results/h1/mumtaz_eegnet_{f}", f"MDD {f} v1-vs-EEGNet"))
-C.append(compare("results/seed_iv", "results/ablation/seed_iv_lstm_proto", "SEED-IV H2 AC-vs-LSTM"))
+    C.append(compare(f"results/h1/seed_iv_v1_{f}", f"results/planB/seed_iv_eegnet_{f}", f"SEED-IV {f} v1-vs-EEGNet"))
+    C.append(compare(f"{MDD_H1}/mumtaz_v1_{f}", f"{MDD_H1}/mumtaz_eegnet_{f}", f"MDD {f} v1-vs-EEGNet"))
+C.append(compare("results/seed_iv", "results/planB/seed_iv_tapnet_f100", "SEED-IV H2 AC-vs-LSTM"))
 C.append(compare("results/seed_iv", "results/ablation/seed_iv_ac_softmax", "SEED-IV H3 proto-vs-softmax"))
 # v1 vs 2nd baseline (ShallowConvNet), full data
 C.append(compare("results/seed_iv", "results/seed_iv_shallowconv", "SEED-IV full v1-vs-ShallowConv"))
 C.append(compare("results/tuab", "results/tuab_shallowconv", "TUAB full v1-vs-ShallowConv"))
 C.append(compare("results/mumtaz_v1", "results/mumtaz_shallowconv", "MDD full v1-vs-ShallowConv"))
 # capacity-matched control (BigCNN) at low data
-C.append(compare("results/h1/mumtaz_v1_f010", "results/h1/mumtaz_bigcnn_f010", "MDD f010 v1-vs-BigCNN"))
-C.append(compare("results/h1/mumtaz_v1_f025", "results/h1/mumtaz_bigcnn_f025", "MDD f025 v1-vs-BigCNN"))
-C.append(compare("results/h1/seed_iv_v1_f010", "results/h1/seed_iv_bigcnn_f010", "SEED-IV f010 v1-vs-BigCNN"))
-C.append(compare("results/h1/seed_iv_v1_f025", "results/h1/seed_iv_bigcnn_f025", "SEED-IV f025 v1-vs-BigCNN"))
+C.append(compare(f"{MDD_H1}/mumtaz_v1_f010", f"{MDD_H1}/mumtaz_bigcnn_f010", "MDD f010 v1-vs-BigCNN"))
+C.append(compare(f"{MDD_H1}/mumtaz_v1_f025", f"{MDD_H1}/mumtaz_bigcnn_f025", "MDD f025 v1-vs-BigCNN"))
+C.append(compare("results/h1/seed_iv_v1_f010", "results/planB/seed_iv_bigcnn_f010", "SEED-IV f010 v1-vs-BigCNN"))
+C.append(compare("results/h1/seed_iv_v1_f025", "results/planB/seed_iv_bigcnn_f025", "SEED-IV f025 v1-vs-BigCNN"))
 # Cavanagh boundary cohort (BDI labels): expected non-significant at low data
-C.append(compare("results/h1/cavanagh_v1_f010", "results/h1/cavanagh_bigcnn_f010", "Cavanagh f010 v1-vs-BigCNN"))
-C.append(compare("results/h1/cavanagh_v1_f025", "results/h1/cavanagh_bigcnn_f025", "Cavanagh f025 v1-vs-BigCNN"))
-C.append(compare("results/cavanagh_v1", "results/cavanagh_eegnet", "Cavanagh full v1-vs-EEGNet"))
+C.append(compare("results/h1/cavanagh_v1_f010", "results/planB/cavanagh_bigcnn_f010", "Cavanagh f010 v1-vs-BigCNN"))
+C.append(compare("results/h1/cavanagh_v1_f025", "results/planB/cavanagh_bigcnn_f025", "Cavanagh f025 v1-vs-BigCNN"))
+C.append(compare("results/cavanagh_v1", "results/planB/cavanagh_eegnet_f100", "Cavanagh full v1-vs-EEGNet"))
+# 修訂新增的比較(交叉實驗與新消融)
+C.append(compare("results/planC/seed_iv_bigcnnproto_f025", "results/planB/seed_iv_bigcnn_f025", "SEED-IV f025 BigCNN+proto-vs-softmax"))
+C.append(compare("results/planC/seed_iv_bigcnnproto_f050", "results/planB/seed_iv_bigcnn_f050", "SEED-IV f050 BigCNN+proto-vs-softmax"))
+C.append(compare("results/planC/mumtaz_bigcnnproto_f100", "results/h1_recheck/mumtaz_bigcnn_f100", "MDD full BigCNN+proto-vs-softmax"))
+C.append(compare("results/seed_iv", "results/planC/seed_iv_no_multiscale", "SEED-IV no-multiscale"))
+C.append(compare("results/seed_iv", "results/planC/seed_iv_episodic", "SEED-IV episodic"))
 C = [c for c in C if c]
 
 # --- Holm-Bonferroni over the family ---
@@ -99,7 +108,7 @@ for c in C:
           f"[{c['ci'][0]:+.3f},{c['ci'][1]:+.3f}] {c['rb']:>+6.2f} {c['p']:>9.4f} {c['p_holm']:>8.4f}{sig}")
 unit_note = ("one observation per fold (BACC averaged over the 3 seeds first)"
              if ARGS.unit == "fold" else
-             "every (seed,fold) treated as independent -- inflates n threefold")
+             "every (seed,fold) treated as independent -- SUBMITTED ANALYSIS, inflates n threefold")
 print(f"\nUnit of analysis: {unit_note}.")
 print(f"Holm-Bonferroni over m={m} comparisons; * = significant at α=0.05 after correction.")
 print("r = matched-pairs rank-biserial effect size; CI = subject/fold bootstrap 95% CI on mean Δ.")

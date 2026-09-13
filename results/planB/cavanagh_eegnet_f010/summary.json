@@ -1,0 +1,45 @@
+{
+  "dataset": "cavanagh",
+  "model": "eegnet",
+  "collapse_bands": false,
+  "protocol": "GroupKFold(10)",
+  "n_classes": 2,
+  "n_subjects": 119,
+  "x_shape": [
+    4474,
+    95,
+    2560
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "epochs": 100,
+  "class_weight": true,
+  "train_frac": 0.1,
+  "n_results": 30,
+  "elapsed_sec": 3899.6,
+  "metrics": {
+    "balanced_accuracy": {
+      "mean": 0.5099329338026374,
+      "std": 0.05030865805382882
+    },
+    "cohen_kappa": {
+      "mean": 0.02207089841500165,
+      "std": 0.10327156423496628
+    },
+    "weighted_f1": {
+      "mean": 0.5307381726812399,
+      "std": 0.10110529287858855
+    },
+    "accuracy": {
+      "mean": 0.5745939889630233,
+      "std": 0.09484165885785298
+    },
+    "auc": {
+      "mean": 0.5177467618224234,
+      "std": 0.0929196299482397
+    }
+  }
+}
