@@ -231,7 +231,13 @@ def subsample_train_subjects(train_idx, groups, frac, seed):
     g = groups[train_idx]
     uniq = np.unique(g)
     k = max(1, int(round(len(uniq) * frac)))
-    rng = np.random.RandomState(seed * 1000 + 7)
+    # The draw is seeded by the run seed AND the identity of the training fold. The
+    # original implementation used the seed alone, so within a seed nearly the same
+    # subject positions were drawn in every fold (at 10% each seed used ~2 distinct
+    # SEED-IV subjects across 15 folds, and one seed drew controls only on Mumtaz).
+    # All results reported before 2026-09-13 used the seed-only draw; see Methods.
+    fold_tag = int(np.uint32(hash(tuple(uniq.tolist())) & 0xFFFFFFFF))
+    rng = np.random.RandomState((seed * 1000 + 7 + fold_tag) % (2 ** 32))
     keep = set(rng.choice(uniq, k, replace=False).tolist())
     return train_idx[np.isin(g, list(keep))]
 
